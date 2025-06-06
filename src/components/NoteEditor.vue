@@ -47,6 +47,10 @@ const props = defineProps({
     type: String,
     required: true
   },
+  selectedNoteId: {
+    type: String,
+    default: null
+  },
   saveStatus: {
     type: String,
     required: true
@@ -64,7 +68,12 @@ let quillEditor = null
 let isInternalUpdate = false
 
 const noteTitle = computed(() => {
-  return formatNoteTitle(props.selectedDate)
+  const dayTitle = formatNoteTitle(props.selectedDate)
+  if (props.selectedNoteId) {
+    // You can enhance this to show the actual note title from your data
+    return dayTitle
+  }
+  return dayTitle
 })
 
 const formattedDate = computed(() => {
@@ -140,7 +149,7 @@ watch(() => props.modelValue, (newValue) => {
 })
 
 // Watch for date changes to reinitialize if needed
-watch(() => props.selectedDate, () => {
+watch([() => props.selectedDate, () => props.selectedNoteId], () => {
   if (quillEditor) {
     isInternalUpdate = true
     quillEditor.root.innerHTML = props.modelValue || ''
