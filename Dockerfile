@@ -71,8 +71,8 @@ COPY --from=deps --chown=appuser:appuser /usr/src/app/node_modules ./node_module
 # Copy built application (assuming build outputs to dist/)
 COPY --from=build --chown=appuser:appuser /usr/src/app/dist ./dist
 
-# Copy any other necessary files (adjust as needed for your app)
-COPY --from=build --chown=appuser:appuser /usr/src/app/public ./public
+# Copy index.html (needed for Vite apps)
+COPY --from=build --chown=appuser:appuser /usr/src/app/index.html ./index.html
 
 # Expose the port
 EXPOSE 4321
