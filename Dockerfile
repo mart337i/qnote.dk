@@ -12,6 +12,9 @@ RUN apk update && apk upgrade && apk add --no-cache dumb-init
 # Set working directory
 WORKDIR /usr/src/app
 
+# Install serve for serving static files in production
+RUN npm install -g serve
+
 # Create non-root user
 ARG UID=10001
 RUN adduser \
@@ -80,5 +83,5 @@ EXPOSE 4321
 # Use dumb-init for proper signal handling
 ENTRYPOINT ["dumb-init", "--"]
 
-# Start the application
-CMD ["npm", "start", "--", "--host"]
+# Start the application by serving the built files
+CMD ["serve", "-s", "dist", "-l", "4321"]
