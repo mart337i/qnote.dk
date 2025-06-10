@@ -4,7 +4,7 @@ ARG NODE_VERSION=18.19.1
 
 ################################################################################
 # Base stage with Node.js
-FROM node:${NODE_VERSION}-alpine as base
+FROM node:${NODE_VERSION}-alpine AS base
 
 # Install security updates and dumb-init for proper signal handling
 RUN apk update && apk upgrade && apk add --no-cache dumb-init
@@ -25,7 +25,7 @@ RUN adduser \
 
 ################################################################################
 # Dependencies stage
-FROM base as deps
+FROM base AS deps
 
 # Copy package files
 COPY package.json package-lock.json* ./
@@ -36,7 +36,7 @@ RUN --mount=type=cache,target=/root/.npm \
 
 ################################################################################
 # Build stage
-FROM base as build
+FROM base AS build
 
 # Copy package files
 COPY package.json package-lock.json* ./
@@ -53,7 +53,7 @@ RUN npm run build
 
 ################################################################################
 # Production stage
-FROM base as final
+FROM base AS final
 
 # Set production environment
 ENV NODE_ENV=production
