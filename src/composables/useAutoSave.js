@@ -24,10 +24,7 @@ export function useAutoSave(currentNote, selectedDate, notes, isLoggedIn) {
       //     })
       // });
       
-      console.log('Would save to database:', {
-        date: selectedDate.value,
-        content: currentNote.value
-      })
+      // Mock database save - replace with actual API call
       
       saveStatus.value = 'Synced to cloud'
       setTimeout(() => {

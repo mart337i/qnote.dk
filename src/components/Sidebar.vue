@@ -1,5 +1,5 @@
 <template>
-  <div class="w-64 bg-base-200 border-r border-base-300 flex flex-col h-screen">
+  <nav class="w-64 bg-base-200 border-r border-base-300 flex flex-col h-screen" role="navigation" aria-label="Notes navigation">
     <!-- Header -->
     <div class="p-4 border-b border-base-300 flex-shrink-0">
       <h1 class="text-xl font-bold text-base-content">Daily Notes</h1>
@@ -16,10 +16,13 @@
             class="border border-base-300 rounded-lg"
           >
             <!-- Day Header -->
-            <div
+            <button
               @click="toggleDay(dayGroup.date)"
-              class="flex items-center justify-between p-3 cursor-pointer hover:bg-base-300 rounded-t-lg"
+              class="w-full flex items-center justify-between p-3 cursor-pointer hover:bg-base-300 rounded-t-lg focus:outline-none focus:ring-2 focus:ring-primary"
               :class="{ 'rounded-b-lg': !expandedDays.has(dayGroup.date) }"
+              :aria-expanded="expandedDays.has(dayGroup.date)"
+              :aria-controls="`notes-${dayGroup.date}`"
+              :aria-label="`Toggle notes for ${dayGroup.title}`"
             >
               <div class="flex-1">
                 <div class="text-sm font-medium text-base-content">{{ dayGroup.title }}</div>
@@ -32,12 +35,15 @@
                   :class="{ 'rotate-180': expandedDays.has(dayGroup.date) }"
                 ></i>
               </div>
-            </div>
+            </button>
 
             <!-- Notes List (Collapsible) -->
             <div
               v-if="expandedDays.has(dayGroup.date)"
               class="border-t border-base-300"
+              :id="`notes-${dayGroup.date}`"
+              role="region"
+              :aria-label="`Notes for ${dayGroup.title}`"
             >
               <!-- Existing Notes -->
               <div
@@ -53,8 +59,8 @@
                 </div>
                 <button
                   @click.stop="$emit('deleteNote', dayGroup.date, note.id)"
-                  class="ml-2 px-2 py-1 text-base-content/60 hover:text-error hover:bg-error/10 rounded transition-all text-sm"
-                  title="Delete note"
+                  class="ml-2 px-2 py-1 text-base-content/60 hover:text-error hover:bg-error/10 rounded transition-all text-sm focus:outline-none focus:ring-2 focus:ring-error"
+                  :aria-label="`Delete note: ${note.title || 'Untitled Note'}`"
                 >
                   ×
                 </button>
@@ -108,7 +114,7 @@
         @logout="$emit('logout')"
       />
     </div>
-  </div>
+  </nav>
 </template>
 
 <script setup>
@@ -116,6 +122,7 @@ import { ref, computed, onMounted, watch } from 'vue'
 import ThemeSelector from './ThemeSelector.vue'
 import UserProfile from './UserProfile.vue'
 import { formatDate, formatNoteTitle, formatTime } from '@/utils/dateHelpers'
+import DOMPurify from 'dompurify'
 
 const props = defineProps({
   notesByDay: {
@@ -215,16 +222,18 @@ const groupedNotes = computed(() => {
 const extractTitleFromContent = (content) => {
   if (!content) return 'Untitled Note'
   
-  // Strip HTML and get first line
-  const tempDiv = document.createElement('div')
-  tempDiv.innerHTML = content
-  const plainText = tempDiv.textContent || tempDiv.innerText || ''
-  
-  const firstLine = plainText.split('\n')[0].trim()
-  if (firstLine.length > 50) {
-    return firstLine.substring(0, 47) + '...'
+  try {
+    // Sanitize content first, then strip HTML and get first line
+    const sanitizedContent = DOMPurify.sanitize(content, { ALLOWED_TAGS: [] })
+    const firstLine = sanitizedContent.split('\n')[0].trim()
+    if (firstLine.length > 50) {
+      return firstLine.substring(0, 47) + '...'
+    }
+    return firstLine || 'Untitled Note'
+  } catch (error) {
+    console.error('Error extracting title from content:', error)
+    return 'Untitled Note'
   }
-  return firstLine || 'Untitled Note'
 }
 
 const toggleDay = (date) => {

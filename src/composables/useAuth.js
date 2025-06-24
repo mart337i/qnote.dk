@@ -28,14 +28,12 @@ export function useAuth() {
       loginForm.value = { email: '', password: '' }
       
       // Could trigger cloud sync here
-      console.log('User logged in:', userName.value)
     }
   }
 
   function logout() {
     isLoggedIn.value = false
     userName.value = ''
-    console.log('User logged out')
   }
 
   return {

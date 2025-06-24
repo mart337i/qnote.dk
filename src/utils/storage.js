@@ -5,7 +5,6 @@ export function saveToLocalStorage(notes, currentNote, selectedDate) {
     localStorage.setItem(STORAGE_KEYS.DAILY_NOTES, JSON.stringify(notes))
     localStorage.setItem(STORAGE_KEYS.CURRENT_NOTE, currentNote)
     localStorage.setItem(STORAGE_KEYS.SELECTED_DATE, selectedDate)
-    console.log('Notes saved to localStorage')
   } catch (error) {
     console.error('Failed to save to localStorage:', error)
   }
@@ -54,7 +53,6 @@ export function clearStorage() {
     Object.values(STORAGE_KEYS).forEach(key => {
       localStorage.removeItem(key)
     })
-    console.log('Storage cleared')
   } catch (error) {
     console.error('Failed to clear storage:', error)
   }

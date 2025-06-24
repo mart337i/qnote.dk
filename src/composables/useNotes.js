@@ -1,6 +1,7 @@
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, nextTick } from 'vue'
 import { getCurrentDate } from '@/utils/dateHelpers'
 import { generateId } from '@/utils/helpers'
+import DOMPurify from 'dompurify'
 
 export function useNotes() {
   // Clean data structure: { "2025-06-06": [{ id, title, content, createdAt, updatedAt }] }
@@ -38,15 +39,22 @@ export function useNotes() {
     }
   }
 
-  // Save notes to localStorage
+  // Debounced save to prevent excessive localStorage writes
+  let saveTimeout = null
   const saveNotes = () => {
-    try {
-      localStorage.setItem('dailyNotes', JSON.stringify(notes.value))
-      localStorage.setItem('selectedDate', selectedDate.value)
-      localStorage.setItem('selectedNoteId', selectedNoteId.value || '')
-    } catch (error) {
-      console.error('Failed to save notes:', error)
+    if (saveTimeout) {
+      clearTimeout(saveTimeout)
     }
+    
+    saveTimeout = setTimeout(() => {
+      try {
+        localStorage.setItem('dailyNotes', JSON.stringify(notes.value))
+        localStorage.setItem('selectedDate', selectedDate.value)
+        localStorage.setItem('selectedNoteId', selectedNoteId.value || '')
+      } catch (error) {
+        console.error('Failed to save notes:', error)
+      }
+    }, 300) // 300ms debounce
   }
 
   // Ensure today has at least one note
@@ -55,8 +63,8 @@ export function useNotes() {
     if (!notes.value[today] || notes.value[today].length === 0) {
       createNote(today)
     } else if (!selectedNoteId.value) {
-      // Select the most recent note for today
-      const todayNotes = notes.value[today]
+      // Select the most recent note for today (avoid mutating original array)
+      const todayNotes = [...notes.value[today]]
       const latestNote = todayNotes.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt))[0]
       selectedNoteId.value = latestNote.id
       selectedDate.value = today
@@ -166,11 +174,15 @@ export function useNotes() {
     // The actual saving happens in the currentNote setter
   }
 
-  // Utility functions
+  // Utility functions with sanitization
   const stripHtml = (html) => {
-    const tmp = document.createElement('div')
-    tmp.innerHTML = html
-    return tmp.textContent || tmp.innerText || ''
+    try {
+      // Use DOMPurify to safely strip HTML
+      return DOMPurify.sanitize(html, { ALLOWED_TAGS: [] })
+    } catch (error) {
+      console.error('Error stripping HTML:', error)
+      return ''
+    }
   }
 
   const extractTitle = (text) => {

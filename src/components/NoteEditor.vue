@@ -22,11 +22,15 @@
     </div>
    
     <!-- Quill Editor -->
-    <div class="flex-1 p-4">
+    <div class="flex-1 p-4 overflow-hidden">
       <div 
         ref="editorContainer"
         class="quill-editor-container"
-        style="min-height: calc(100vh - 200px);"
+        style="height: calc(100vh - 200px);"
+        role="textbox"
+        aria-label="Note editor"
+        aria-multiline="true"
+        tabindex="0"
       ></div>
     </div>
   </div>
@@ -36,6 +40,7 @@
 import { computed, ref, onMounted, watch, nextTick } from 'vue'
 import { formatDate, formatNoteTitle } from '@/utils/dateHelpers'
 import Quill from 'quill'
+import DOMPurify from 'dompurify'
 import 'quill/dist/quill.snow.css'
 
 const props = defineProps({
@@ -86,10 +91,14 @@ onMounted(async () => {
 })
 
 const initializeQuill = () => {
-  if (!editorContainer.value) return
+  if (!editorContainer.value) {
+    console.error('Editor container not found')
+    return
+  }
 
-  // Quill configuration
-  const toolbarOptions = [
+  try {
+    // Quill configuration
+    const toolbarOptions = [
     ['bold', 'italic', 'underline', 'strike'],
     ['blockquote', 'code-block'],
     [{ 'header': 1 }, { 'header': 2 }],
@@ -119,48 +128,68 @@ const initializeQuill = () => {
     ]
   })
 
-  // Set initial content
+  // Set initial content with sanitization
   if (props.modelValue) {
     isInternalUpdate = true
-    quillEditor.root.innerHTML = props.modelValue
+    const sanitizedContent = DOMPurify.sanitize(props.modelValue)
+    quillEditor.root.innerHTML = sanitizedContent
     isInternalUpdate = false
   }
 
-  // Listen for text changes
-  quillEditor.on('text-change', () => {
-    if (isInternalUpdate) return
-    
-    const html = quillEditor.root.innerHTML
-    emit('update:modelValue', html)
-    emit('noteChange')
-  })
+    // Listen for text changes
+    quillEditor.on('text-change', () => {
+      if (isInternalUpdate) return
+      
+      try {
+        const html = quillEditor.root.innerHTML
+        emit('update:modelValue', html)
+        emit('noteChange')
+      } catch (error) {
+        console.error('Error handling text change:', error)
+      }
+    })
+  } catch (error) {
+    console.error('Error initializing Quill editor:', error)
+  }
 }
 
 // Watch for prop changes to update editor content
 watch(() => props.modelValue, (newValue) => {
   if (quillEditor && !isInternalUpdate) {
-    isInternalUpdate = true
-    const currentContent = quillEditor.root.innerHTML
-    if (currentContent !== newValue) {
-      quillEditor.root.innerHTML = newValue || ''
+    try {
+      isInternalUpdate = true
+      const currentContent = quillEditor.root.innerHTML
+      const sanitizedNewValue = newValue ? DOMPurify.sanitize(newValue) : ''
+      if (currentContent !== sanitizedNewValue) {
+        quillEditor.root.innerHTML = sanitizedNewValue
+      }
+    } catch (error) {
+      console.error('Error updating editor content:', error)
+    } finally {
+      isInternalUpdate = false
     }
-    isInternalUpdate = false
   }
 })
 
 // Watch for date changes to reinitialize if needed
 watch([() => props.selectedDate, () => props.selectedNoteId], () => {
   if (quillEditor) {
-    isInternalUpdate = true
-    quillEditor.root.innerHTML = props.modelValue || ''
-    isInternalUpdate = false
+    try {
+      isInternalUpdate = true
+      const sanitizedContent = props.modelValue ? DOMPurify.sanitize(props.modelValue) : ''
+      quillEditor.root.innerHTML = sanitizedContent
+    } catch (error) {
+      console.error('Error reinitializing editor content:', error)
+    } finally {
+      isInternalUpdate = false
+    }
   }
 })
 </script>
 
 <style scoped>
 .quill-editor-container {
-  @apply w-full h-full;
+  @apply w-full h-full overflow-y-auto;
 }
 
 /* Reset and override DaisyUI conflicts for Quill */
@@ -178,6 +207,8 @@ watch([() => props.selectedDate, () => props.selectedNoteId], () => {
   border-radius: 0 0 0.5rem 0.5rem !important;
   font-family: inherit !important;
   background: hsl(var(--b1)) !important;
+  height: calc(100% - 42px) !important;
+  overflow-y: auto !important;
 }
 
 :deep(.ql-editor) {
@@ -188,7 +219,7 @@ watch([() => props.selectedDate, () => props.selectedNoteId], () => {
   padding: 1rem !important;
   border: none !important;
   outline: none !important;
-  min-height: calc(100vh - 280px) !important;
+  min-height: 100% !important;
 }
 
 :deep(.ql-editor.ql-blank::before) {
