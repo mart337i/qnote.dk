@@ -3,8 +3,14 @@
     <!-- Header -->
     <div class="p-4 border-b border-base-300 bg-base-100">
       <div class="flex items-center justify-between">
-        <div>
-          <h2 class="text-2xl font-bold text-base-content">{{ noteTitle }}</h2>
+        <div class="flex-1 mr-4">
+          <input 
+            v-model="noteTitle"
+            @input="handleTitleChange"
+            class="text-2xl font-bold text-base-content bg-transparent border-none outline-none w-full placeholder-base-content/50 focus:ring-0"
+            placeholder="Enter note title..."
+            type="text"
+          />
           <p class="text-sm text-base-content/70">{{ formattedDate }}</p>
         </div>
         <div class="flex items-center space-x-2">
@@ -63,23 +69,34 @@ const props = defineProps({
   isLoggedIn: {
     type: Boolean,
     required: true
+  },
+  title: {
+    type: String,
+    default: ''
   }
 })
 
-const emit = defineEmits(['update:modelValue', 'noteChange'])
+const emit = defineEmits(['update:modelValue', 'noteChange', 'titleChange'])
 
 const editorContainer = ref(null)
 let quillEditor = null
 let isInternalUpdate = false
+let isUserTyping = false
+let typingTimeout = null
 
-const noteTitle = computed(() => {
-  const dayTitle = formatNoteTitle(props.selectedDate)
-  if (props.selectedNoteId) {
-    // You can enhance this to show the actual note title from your data
-    return dayTitle
-  }
-  return dayTitle
-})
+const noteTitle = ref('')
+
+// Watch for title prop changes
+watch(() => props.title, (newTitle) => {
+  console.log('NoteEditor: title prop changed to:', newTitle)
+  noteTitle.value = newTitle || ''
+}, { immediate: true })
+
+// Handle title input changes
+const handleTitleChange = () => {
+  console.log('NoteEditor: title input changed to:', noteTitle.value)
+  emit('titleChange', noteTitle.value)
+}
 
 const formattedDate = computed(() => {
   return formatDate(props.selectedDate)
@@ -137,10 +154,19 @@ const initializeQuill = () => {
   }
 
     // Listen for text changes
-    quillEditor.on('text-change', () => {
+    quillEditor.on('text-change', (delta, oldDelta, source) => {
       if (isInternalUpdate) return
       
       try {
+        // Mark user as typing to prevent content updates
+        if (source === 'user') {
+          isUserTyping = true
+          if (typingTimeout) clearTimeout(typingTimeout)
+          typingTimeout = setTimeout(() => {
+            isUserTyping = false
+          }, 500)
+        }
+        
         const html = quillEditor.root.innerHTML
         emit('update:modelValue', html)
         emit('noteChange')
@@ -148,6 +174,24 @@ const initializeQuill = () => {
         console.error('Error handling text change:', error)
       }
     })
+
+    // Add selection-change handler specifically for list focus issues
+    quillEditor.on('selection-change', (range, oldRange, source) => {
+      // If user was typing in a list and suddenly lost selection, restore it
+      if (source === 'user' && range === null && oldRange !== null) {
+        const format = quillEditor.getFormat(oldRange.index, oldRange.length)
+        if (format.list) {
+          setTimeout(() => {
+            if (quillEditor && !quillEditor.hasFocus()) {
+              quillEditor.focus()
+              quillEditor.setSelection(oldRange)
+            }
+          }, 10)
+        }
+      }
+    })
+
+
   } catch (error) {
     console.error('Error initializing Quill editor:', error)
   }
@@ -155,7 +199,8 @@ const initializeQuill = () => {
 
 // Watch for prop changes to update editor content
 watch(() => props.modelValue, (newValue) => {
-  if (quillEditor && !isInternalUpdate) {
+  // Don't update content while user is actively typing
+  if (quillEditor && !isInternalUpdate && !isUserTyping) {
     try {
       isInternalUpdate = true
       const currentContent = quillEditor.root.innerHTML
@@ -170,6 +215,8 @@ watch(() => props.modelValue, (newValue) => {
     }
   }
 })
+
+
 
 // Watch for date changes to reinitialize if needed
 watch([() => props.selectedDate, () => props.selectedNoteId], () => {

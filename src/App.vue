@@ -15,11 +15,13 @@
    
     <NoteEditor
       v-model="currentNote"
+      :title="currentNoteTitle"
       :selected-date="selectedDate"
       :selected-note-id="selectedNoteId"
       :save-status="saveStatus"
       :is-logged-in="isLoggedIn"
       @note-change="handleNoteChange"
+      @title-change="updateNoteTitle"
     />
    
     <LoginModal
@@ -42,13 +44,15 @@ import { useAuth } from './composables/useAuth'
 // Composables
 const {
   currentNote,
+  currentNoteTitle,
   selectedDate,
   selectedNoteId,
   notes,
   selectNote,
   createNote,
   deleteNote,
-  handleNoteChange
+  handleNoteChange,
+  updateNoteTitle
 } = useNotes()
 
 const {

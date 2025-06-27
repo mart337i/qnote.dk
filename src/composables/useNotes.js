@@ -1,7 +1,7 @@
-import { ref, computed, watch, nextTick } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { getCurrentDate } from '@/utils/dateHelpers'
 import { generateId } from '@/utils/helpers'
-import DOMPurify from 'dompurify'
+
 
 export function useNotes() {
   // Clean data structure: { "2025-06-06": [{ id, title, content, createdAt, updatedAt }] }
@@ -18,6 +18,15 @@ export function useNotes() {
       
       if (saved) {
         notes.value = JSON.parse(saved)
+        
+        // Migrate existing notes to include title field
+        Object.keys(notes.value).forEach(date => {
+          notes.value[date].forEach(note => {
+            if (!note.title) {
+              note.title = 'Untitled Note'
+            }
+          })
+        })
       }
       
       if (savedDate) {
@@ -54,7 +63,7 @@ export function useNotes() {
       } catch (error) {
         console.error('Failed to save notes:', error)
       }
-    }, 300) // 300ms debounce
+    }, 1000) // 1000ms debounce to reduce interference
   }
 
   // Ensure today has at least one note
@@ -88,11 +97,6 @@ export function useNotes() {
       if (noteIndex >= 0) {
         dayNotes[noteIndex].content = value
         dayNotes[noteIndex].updatedAt = new Date().toISOString()
-        
-        // Update title based on content
-        const plainText = stripHtml(value)
-        dayNotes[noteIndex].title = extractTitle(plainText)
-        
         saveNotes()
       }
     }
@@ -174,26 +178,28 @@ export function useNotes() {
     // The actual saving happens in the currentNote setter
   }
 
-  // Utility functions with sanitization
-  const stripHtml = (html) => {
-    try {
-      // Use DOMPurify to safely strip HTML
-      return DOMPurify.sanitize(html, { ALLOWED_TAGS: [] })
-    } catch (error) {
-      console.error('Error stripping HTML:', error)
-      return ''
+  // Update note title
+  const updateNoteTitle = (title) => {
+    console.log('updateNoteTitle called with:', title)
+    if (!selectedDate.value || !selectedNoteId.value) return
+    
+    const dayNotes = notes.value[selectedDate.value] || []
+    const noteIndex = dayNotes.findIndex(n => n.id === selectedNoteId.value)
+    
+    if (noteIndex >= 0) {
+      dayNotes[noteIndex].title = title || 'Untitled Note'
+      dayNotes[noteIndex].updatedAt = new Date().toISOString()
+      saveNotes()
     }
   }
 
-  const extractTitle = (text) => {
-    if (!text || !text.trim()) return 'Untitled Note'
-    
-    const firstLine = text.split('\n')[0].trim()
-    if (firstLine.length > 50) {
-      return firstLine.substring(0, 47) + '...'
-    }
-    return firstLine || 'Untitled Note'
-  }
+  // Get current note title
+  const currentNoteTitle = computed(() => {
+    if (!selectedDate.value || !selectedNoteId.value) return ''
+    const dayNotes = notes.value[selectedDate.value] || []
+    const note = dayNotes.find(n => n.id === selectedNoteId.value)
+    return note?.title || ''
+  })
 
   // Watch for date changes to auto-switch to today
   watch(() => getCurrentDate(), (newDate) => {
@@ -208,11 +214,13 @@ export function useNotes() {
   return {
     notes,
     currentNote,
+    currentNoteTitle,
     selectedDate,
     selectedNoteId,
     selectNote,
     createNote,
     deleteNote,
-    handleNoteChange
+    handleNoteChange,
+    updateNoteTitle
   }
 }
