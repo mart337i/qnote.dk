@@ -38,6 +38,11 @@
         aria-multiline="true"
         tabindex="0"
       ></div>
+      
+      <!-- Code Toolbox -->
+      <div class="code-toolbox-container mt-2">
+        <CodeToolbox v-if="quillEditor" :quill-editor="quillEditor" />
+      </div>
     </div>
   </div>
 </template>
@@ -48,6 +53,7 @@ import { formatDate, formatNoteTitle } from '@/utils/dateHelpers'
 import Quill from 'quill'
 import DOMPurify from 'dompurify'
 import 'quill/dist/quill.snow.css'
+import CodeToolbox from './CodeToolbox.vue'
 
 const props = defineProps({
   modelValue: {
@@ -129,7 +135,8 @@ const initializeQuill = () => {
     [{ 'font': [] }],
     [{ 'align': [] }],
     ['clean'],
-    ['link']
+    ['link'],
+    ['code-block']
   ]
 
   quillEditor = new Quill(editorContainer.value, {
@@ -139,7 +146,7 @@ const initializeQuill = () => {
     },
     placeholder: 'Start writing your thoughts for today...',
     formats: [
-      'bold', 'italic', 'underline', 'strike', 'blockquote', 'code-block',
+      'bold', 'italic', 'underline', 'strike', 'blockquote', 'code-block', 'code',
       'header', 'list', 'script', 'indent', 'direction', 'size', 'color',
       'background', 'font', 'align', 'link'
     ]
@@ -232,6 +239,16 @@ watch([() => props.selectedDate, () => props.selectedNoteId], () => {
     }
   }
 })
+</script>
+
+<script>
+import CodeToolbox from './CodeToolbox.vue'
+
+export default {
+  components: {
+    CodeToolbox
+  }
+}
 </script>
 
 <style scoped>
@@ -433,5 +450,54 @@ watch([() => props.selectedDate, () => props.selectedNoteId], () => {
 :deep(.ql-toolbar .ql-formats:not(:last-child)) {
   border-right: 1px solid hsl(var(--bc) / 0.1) !important;
   padding-right: 8px !important;
+}
+
+/* Code toolbox styling */
+.code-toolbox-container {
+  @apply bg-base-100 border border-base-300 rounded-lg p-2;
+}
+
+/* Enhanced code block styling */
+:deep(.ql-editor pre.ql-syntax) {
+  background: hsl(var(--b2)) !important;
+  border: 1px solid hsl(var(--bc) / 0.2) !important;
+  border-radius: 0.5rem !important;
+  padding: 1rem !important;
+  margin: 0.5rem 0 !important;
+  overflow-x: auto !important;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace !important;
+  font-size: 0.875rem !important;
+  line-height: 1.5 !important;
+  color: hsl(var(--bc)) !important;
+}
+
+/* Inline code styling */
+:deep(.ql-editor code) {
+  background: hsl(var(--b2)) !important;
+  border: 1px solid hsl(var(--bc) / 0.2) !important;
+  border-radius: 0.25rem !important;
+  padding: 0.125rem 0.25rem !important;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace !important;
+  font-size: 0.875em !important;
+  color: hsl(var(--bc)) !important;
+}
+
+/* Prism.js theme integration */
+:deep(.language-javascript),
+:deep(.language-typescript),
+:deep(.language-jsx),
+:deep(.language-tsx),
+:deep(.language-css),
+:deep(.language-html),
+:deep(.language-json) {
+  background: hsl(var(--b2)) !important;
+  border: 1px solid hsl(var(--bc) / 0.2) !important;
+  border-radius: 0.5rem !important;
+  padding: 1rem !important;
+  margin: 0.5rem 0 !important;
+  overflow-x: auto !important;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace !important;
+  font-size: 0.875rem !important;
+  line-height: 1.5 !important;
 }
 </style>
