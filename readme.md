@@ -1,163 +1,68 @@
-# Daily Notes App
+# qnote.dk
 
-A modern, clean daily journaling application built with Vue 3, Vite, and Tailwind CSS.
+A clean, fast daily notes app. Write notes with rich text formatting, embedded code blocks with syntax highlighting, and 29 DaisyUI themes.
 
-## Features
+## Stack
 
-- ✨ Clean, modern interface with DaisyUI components
-- 📝 Auto-saving notes with visual feedback
-- 🎨 Multiple theme support (28+ DaisyUI themes)
-- 💾 Local storage with cloud sync capability
-- 🔐 User authentication (mock implementation)
-- 📱 Responsive design
-- ⚡ Fast development with Vite
+- **Vue 3** (Composition API) + **Vite**
+- **Quill.js** — rich text editor
+- **CodeMirror 6** — embedded code blocks with live syntax highlighting
+- **Tailwind CSS** + **DaisyUI** — styling and theming
+- **DOMPurify** — HTML sanitisation
 
-## Quick Start
+## Quick start
 
-1. **Clone and install dependencies:**
 ```bash
-git clone <your-repo>
-cd daily-notes
 npm install
-```
-
-2. **Start development server:**
-```bash
 npm run dev
 ```
 
-3. **Build for production:**
 ```bash
-npm run build
+npm run build    # production build
+npm run preview  # preview build locally
+npm run test     # run tests
 ```
 
-## Project Structure
+## Project structure
 
 ```
 src/
-├── main.js              # App entry point
-├── App.vue              # Root component
-├── components/          # Reusable Vue components
-│   ├── Sidebar.vue      # Navigation and recent notes
-│   ├── NoteEditor.vue   # Main note editing interface
-│   ├── ThemeSelector.vue # Theme switching component
-│   ├── LoginModal.vue   # Authentication modal
-│   └── UserProfile.vue  # User info and logout
-├── composables/         # Reusable composition functions
-│   ├── useNotes.js      # Note management logic
-│   ├── useAuth.js       # Authentication logic
-│   ├── useTheme.js      # Theme management
-│   └── useAutoSave.js   # Auto-save functionality
-├── utils/               # Utility functions
-│   ├── dateHelpers.js   # Date formatting and manipulation
-│   ├── storage.js       # LocalStorage operations
-│   └── constants.js     # App constants
-└── styles/              # CSS and styling
-    ├── main.css         # Main stylesheet
-    └── themes.css       # Theme-specific styles
+├── App.vue                   # Root layout
+├── main.js                   # Entry point
+├── blots/
+│   └── CodeMirrorBlot.js     # Quill blot that embeds a CodeMirror editor
+├── components/
+│   ├── NoteEditor.vue        # Main editor (Quill + toolbar)
+│   ├── Sidebar.vue           # Note list and navigation
+│   ├── ThemeSelector.vue     # Theme picker
+│   ├── LoginModal.vue        # Auth modal
+│   └── UserProfile.vue       # User display
+├── composables/
+│   ├── useNotes.js           # Note state, CRUD, localStorage
+│   ├── useAuth.js            # Auth state
+│   └── useTheme.js           # Theme persistence
+├── utils/
+│   ├── dateHelpers.js        # Date formatting
+│   ├── helpers.js            # generateId, debounce
+│   └── constants.js          # Storage keys, theme list
+└── styles/
+    └── main.css              # Tailwind imports + scrollbar
 ```
 
-## Key Improvements from Original
+## Editor features
 
-### 🔧 **Better Architecture**
-- **Separation of Concerns:** Each component has a single responsibility
-- **Reusable Logic:** Composables extract business logic for reuse
-- **Modular Components:** Easy to test, maintain, and extend
+- **Toolbar:** Bold, Italic, Underline, Strike, H1–H3, Ordered/Bullet list, Blockquote, Code block, Link, Text colour, Align (Left / Center / Right / Justify), Clear formatting
+- **Code blocks:** Embedded CodeMirror 6 with syntax highlighting for JS/TS, HTML, CSS, Python, Java, C++, Rust, SQL, JSON, Markdown. Language selector and copy button per block. Theme-aware (light/dark).
+- **Headings:** Google Docs-style typography — H1 with bottom border, H2/H3 with scaled weights.
+- **Themes:** All 29 DaisyUI themes work, including full dark-mode support in the editor and code blocks.
+- **Storage:** Notes saved to `localStorage` as sanitised HTML. Code block content is serialised as `data-` attributes so the live editor DOM is never stored.
 
-### 🚀 **Modern Development Setup**
-- **Vite:** Lightning-fast development with HMR
-- **ES Modules:** Native module support
-- **Build Optimization:** Automatic code splitting and optimization
+## Docker
 
-### 🧪 **Testing Ready**
-- **Component Isolation:** Each component can be tested independently
-- **Pure Functions:** Utilities are easy to unit test
-- **Mock-friendly:** Composables can be easily mocked
-
-### 📦 **Scalability**
-- **Clear Structure:** Easy for new developers to understand
-- **Extensible:** Add new features without touching existing code
-- **Type-safe Ready:** Easy to migrate to TypeScript
-
-## Development Guidelines
-
-### Adding New Features
-
-1. **Create a composable** for business logic:
-```javascript
-// src/composables/useNewFeature.js
-export function useNewFeature() {
-  // Your logic here
-  return { /* exported functions and refs */ }
-}
-```
-
-2. **Create components** for UI:
-```vue
-<!-- src/components/NewComponent.vue -->
-<template>
-  <!-- Your template -->
-</template>
-<script setup>
-// Your component logic
-</script>
-```
-
-3. **Add utilities** for helpers:
-```javascript
-// src/utils/newHelpers.js
-export function newHelper() {
-  // Pure helper function
-}
-```
-
-### Component Guidelines
-
-- Use **composition API** with `<script setup>`
-- **Props** for data in, **emits** for events out
-- Keep components **focused** on single responsibility
-- Use **TypeScript** for better developer experience (recommended)
-
-### State Management
-
-For complex state, consider adding **Pinia**:
 ```bash
-npm install pinia
+docker compose up
 ```
-
-### Testing
-
-Add **Vitest** and **Vue Test Utils**:
-```bash
-npm install -D vitest @vue/test-utils
-```
-
-## Next Steps
-
-1. **Add TypeScript** for better type safety
-2. **Implement real backend** for cloud sync
-3. **Add PWA features** for offline support
-4. **Add Vue Router** for multiple views
-5. **Add Storybook** for component documentation
-6. **Add E2E testing** with Cypress or Playwright
-
-## Scripts
-
-- `npm run dev` - Start development server
-- `npm run build` - Build for production
-- `npm run preview` - Preview production build
-- `npm run test` - Run tests
-- `npm run lint` - Lint code
-- `npm run format` - Format code with Prettier
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests if applicable
-5. Submit a pull request
 
 ## License
 
-MIT License - see LICENSE file for details
+MIT
